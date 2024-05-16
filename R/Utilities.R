@@ -57,7 +57,7 @@ utils::globalVariables(c(
   "TADA.ActivityMediaName", "TADA.NutrientSummationGroup",
   "SummationName", "SummationRank", "SummationFractionNotes", "SummationSpeciationNotes",
   "SummationSpeciationConversionFactor", "SummationNote", "NutrientGroup",
-  "Target.Speciation", "TADA.NearbySiteGroups", "numres", "TADA.SingleOrgDupGroupID",
+  "Target.Speciation", "TADA.MonitoringLocationIdentifier", "numres", "TADA.SingleOrgDupGroupID",
   "TADA.MeasureQualifierCode.Flag", "TADA.MeasureQualifierCode.Def", "MeasureQualifierCode", "value", "Flag_Column",
   "Data_NCTCShepherdstown_HUC12", "ActivityStartDateTime", "TADA.MultipleOrgDupGroupID",
   "TADA.WQXVal.Flag", "Concat", ".", "MeasureQualifierCode.Split", "TADA.Media.Flag",
@@ -712,7 +712,7 @@ TADA_CreateComparableID <- function(.data) {
 #' @param dist_buffer Numeric. The maximum distance (in meters) two sites can be
 #'   from one another to be considered "nearby" and grouped together.
 #'
-#' @return Input dataframe with a TADA.NearbySiteGroups column that indicates
+#' @return Input dataframe with a TADA.MonitoringLocationIdentifier column that indicates
 #'   the nearby site groups each monitoring location belongs to.
 #'
 #' @export
@@ -760,7 +760,7 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
     sites <- dat$MonitoringLocationIdentifier[dat$Count == 1] # filter to sites within buffer
     sites1 <- sites[!sites %in% fsite] # get site list within buffer that does not include focal site
     if (length(sites1) > 0) { # if this list is greater than 0, combine sites within buffer into data frame
-      df <- data.frame(MonitoringLocationIdentifier = sites, TADA.SiteGroup = paste0(sites, collapse = ", "))
+      df <- data.frame(MonitoringLocationIdentifier = sites, TADA.MonitoringLocationIdentifier = paste0(sites, collapse = "|"))
       groups <- plyr::rbind.fill(groups, df)
     }
   }
@@ -770,9 +770,9 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
 
   if (dim(groups)[1] > 0) { # if there are groups of nearby sites...
     # create group ID's for easier understanding
-    grp <- data.frame(TADA.SiteGroup = unique(groups$TADA.SiteGroup), TADA.SiteGroupID = paste0("Group_", 1:length(unique(groups$TADA.SiteGroup))))
-    groups <- merge(groups, grp, all.x = TRUE)
-    groups <- unique(groups[, !names(groups) %in% c("TADA.SiteGroup")])
+    # grp <- data.frame(TADA.SiteGroup = unique(groups$TADA.SiteGroup), TADA.SiteGroupID = paste0("Group_", 1:length(unique(groups$TADA.SiteGroup))))
+    # groups <- merge(groups, grp, all.x = TRUE)
+    # groups <- unique(groups[, !names(groups) %in% c("TADA.SiteGroup")])
 
     # find any sites within multiple groups
     summ_sites <- groups %>%
@@ -781,19 +781,22 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
 
     # pivot wider if a site belongs to multiple groups
     groups_wide <- merge(groups, summ_sites, all.x = TRUE)
-    groups_wide <- tidyr::pivot_wider(groups_wide, id_cols = "MonitoringLocationIdentifier", names_from = "GroupCount", names_prefix = "TADA.SiteGroup", values_from = "TADA.SiteGroupID")
-    # merge data to site groupings
+    groups_wide <- tidyr::pivot_wider(groups_wide, id_cols = "MonitoringLocationIdentifier", names_from = "GroupCount", names_prefix = "TADA.MonitoringLocationIdentifier", values_from = "TADA.MonitoringLocationIdentifier")
+     # merge data to site groupings
     .data <- merge(.data, groups_wide, all.x = TRUE)
 
     # concatenate and move site id cols to right place
-    grpcols <- names(.data)[grepl("TADA.SiteGroup", names(.data))]
+    grpcols <- names(.data)[grepl("TADA.MonitoringLocationIdentifier", names(.data))]
 
-    .data <- .data %>% tidyr::unite(col = TADA.NearbySiteGroups, dplyr::all_of(grpcols), sep = ", ", na.rm = TRUE)
-    .data$TADA.NearbySiteGroups[.data$TADA.NearbySiteGroups == ""] <- "No nearby sites"
+    # .data <- .data %>% tidyr::unite(col = TADA.MonitoringLocationIdentifier, dplyr::all_of(grpcols), sep = ", ", na.rm = TRUE)
+    # .data$TADA.MonitoringLocationIdentifier[.data$MonitoringLocationIdentifier == ""] <- "No nearby sites"
   }
 
-  if (dim(groups)[1] == 0) { # if no groups, give a TADA.NearbySiteGroups column filled with NA
-    .data$TADA.NearbySiteGroups <- "No nearby sites"
+  # .data <- .data %>% 
+  #   dplyr::mutate(TADA.MonitoringLocationIdentifier = coalesce(TADA.MonitoringLocationIdentifier, MonitoringLocationIdentifier))
+
+  if (dim(groups)[1] == 0) { # #if no groups, give a TADA.MonitoringLocationIdentifier column filled with NA
+    # .data$TADA.MonitoringLocationIdentifier <- "No nearby sites"
     print("No nearby sites detected using input buffer distance.")
   }
 

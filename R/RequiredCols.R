@@ -181,7 +181,7 @@ require.cols <- c(
   "TADA.InvalidCoordinates.Flag", # generated
   "HUCEightDigitCode",
   "MonitoringLocationIdentifier", # required
-  "TADA.NearbySiteGroups",
+  "TADA.MonitoringLocationIdentifier",
 
   # Groundwater fields
   "AquiferName", # filter, groundwater
