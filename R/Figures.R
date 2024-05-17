@@ -538,16 +538,33 @@ TADA_OverviewMap <- function(.data) {
 
 #' Create Flagged Sites Map
 TADA_FlaggedSitesMap <- function(.data) {
-  nearbyIcon <- icon.glyphicon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "pink")
-  nearby <- TADA_GetUniqueNearbySites(.data)
+  invalid <- TADA_FlagCoordinates(.data, flaggedonly = TRUE)
+  lowres <- TADA_GetUniqueLowRes(.data)
+  nearby <- TADA_FindNearbySites(.data)
+  nearby <- TADA_GetUniqueNearbySites(nearby)
   
-  map <- leaflet::leaflet(data = nearby) %>%
+  invalidIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "purple")
+  lowresIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "green")
+  nearbyIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "pink")
+  
+  map <- leaflet::leaflet() %>%
     leaflet::addProviderTiles("Esri.WorldTopoMap", group = "World topo", options = leaflet::providerTileOptions(updateWhenZooming = FALSE, updateWhenIdle = TRUE)) %>%
-    leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure, 
+    leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
+                               ~TADA.LatitudeMeasure,
+                               icon = invalidIcon,
+                               label=~as.character(MonitoringLocationIdentifier),
+                               data=invalid) %>%
+    leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
+                               ~TADA.LatitudeMeasure,
+                               icon = lowresIcon,
+                               label=~as.character(MonitoringLocationIdentifier),
+                               data=lowres) %>%
+    leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
                                ~TADA.LatitudeMeasure,
                                icon = nearbyIcon,
-                               label=~as.character(TADA.MonitoringLocationIdentifier))
-  
+                               label=~as.character(TADA.MonitoringLocationIdentifier),
+                               data=nearby)
+        
   return(map)
 }
 

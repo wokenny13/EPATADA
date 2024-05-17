@@ -836,6 +836,39 @@ TADA_GetUniqueNearbySites <- function(.data) {
 }
 
 
+#' Get grouped monitoring stations that are near each other
+#'
+#' This function takes a TADA dataset and returns a unique dataset of 
+#' MonitoringLocationIdentifier, TADA.LongitudeMeasure, and TADA.LatitudeMeasure,
+#' filtered for only those stations that have coordinates with less than 3 decimal places.
+#'
+#' @param .data TADA dataframe 
+#'
+#' @return New dataframe with unique values for MonitoringLocationIdentifier,
+#' TADA.MonitoringLocationIdentifier, TADA.LongitudeMeasure, and TADA.LatitudeMeasure
+#'
+#' @export
+#'
+TADA_GetUniqueLowRes <- function(.data) {
+  # check .data is data.frame
+  TADA_CheckType(.data, "data.frame", "Input object")
+  
+  # .data required columns
+  required_cols <- c("MonitoringLocationIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure")
+  # check .data has required columns
+  TADA_CheckColumns(.data, required_cols)
+  
+  .data <- .data[c("MonitoringLocationIdentifier", "MonitoringLocationName", "MonitoringLocationTypeName", "MonitoringLocationDescriptionText", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure")]
+  .data <- dplyr::filter(.data, 
+                          grepl("\\..{0,2}$", .data$TADA.LongitudeMeasure) |
+                          grepl("\\..{0,2}$", .data$TADA.LatitudeMeasure))
+  
+  return(.data)
+}
+
+
+
+
 #' Generate a random WQP dataset
 #'
 #' Retrieves data for a period of time in the past 20 years using
