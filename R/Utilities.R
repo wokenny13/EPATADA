@@ -75,7 +75,7 @@ utils::globalVariables(c(
   "ATTAINS_AUs"
 ))
 
-# global variables for tribal feature layers used in TADA_OverviewMap in Utilities.R
+# global variables for tribal feature layers used in TADA_OverviewMap in Figures.R
 AKAllotmentsUrl <- "https://geopub.epa.gov/arcgis/rest/services/EMEF/Tribal/MapServer/0/query"
 AKVillagesUrl <- "https://geopub.epa.gov/arcgis/rest/services/EMEF/Tribal/MapServer/1/query"
 AmericanIndianUrl <- "https://geopub.epa.gov/arcgis/rest/services/EMEF/Tribal/MapServer/2/query"
@@ -788,15 +788,13 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
     # concatenate and move site id cols to right place
     grpcols <- names(.data)[grepl("TADA.MonitoringLocationIdentifier", names(.data))]
 
-    # .data <- .data %>% tidyr::unite(col = TADA.MonitoringLocationIdentifier, dplyr::all_of(grpcols), sep = ", ", na.rm = TRUE)
-    # .data$TADA.MonitoringLocationIdentifier[.data$MonitoringLocationIdentifier == ""] <- "No nearby sites"
+    .data <- .data %>% tidyr::unite(col = TADA.MonitoringLocationIdentifier, dplyr::all_of(grpcols), sep = ", ", na.rm = TRUE)
   }
 
-  # .data <- .data %>% 
-  #   dplyr::mutate(TADA.MonitoringLocationIdentifier = coalesce(TADA.MonitoringLocationIdentifier, MonitoringLocationIdentifier))
-
+  .data <- .data %>% 
+    dplyr::mutate(TADA.MonitoringLocationIdentifier = ifelse(TADA.MonitoringLocationIdentifier == "", MonitoringLocationIdentifier, TADA.MonitoringLocationIdentifier))   
+  
   if (dim(groups)[1] == 0) { # #if no groups, give a TADA.MonitoringLocationIdentifier column filled with NA
-    # .data$TADA.MonitoringLocationIdentifier <- "No nearby sites"
     print("No nearby sites detected using input buffer distance.")
   }
 
@@ -807,6 +805,36 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
 
   return(.data)
 }
+
+#' Get grouped monitoring stations that are near each other
+#'
+#' This function takes a TADA dataset that contains grouped nearby monitoring stations
+#' and returns a unique dataset of the original MonitoringLocationIdentifier, the grouped
+#' TADA.MonitoringLocationIdentifier, TADA.LongitudeMeasure, and TADA.LatitudeMeasure,
+#' filtered for only those stations that have a nearby station.
+#'
+#' @param .data TADA dataframe 
+#'
+#' @return New dataframe with unique values for MonitoringLocationIdentifier,
+#' TADA.MonitoringLocationIdentifier, TADA.LongitudeMeasure, and TADA.LatitudeMeasure
+#'
+#' @export
+#'
+TADA_GetUniqueNearbySites <- function(.data) {
+  # check .data is data.frame
+  TADA_CheckType(.data, "data.frame", "Input object")
+  
+  # .data required columns
+  required_cols <- c("MonitoringLocationIdentifier", "TADA.MonitoringLocationIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure")
+  # check .data has required columns
+  TADA_CheckColumns(.data, required_cols)
+  
+  .data <- .data[c("MonitoringLocationIdentifier", "MonitoringLocationName", "MonitoringLocationTypeName", "MonitoringLocationDescriptionText", "TADA.MonitoringLocationIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure")]
+  .data <- unique(dplyr::filter(.data, grepl("\\|", TADA.MonitoringLocationIdentifier)))
+  
+  return(.data)
+}
+
 
 #' Generate a random WQP dataset
 #'

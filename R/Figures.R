@@ -535,6 +535,23 @@ TADA_OverviewMap <- function(.data) {
   }))
 }
 
+
+#' Create Flagged Sites Map
+TADA_FlaggedSitesMap <- function(.data) {
+  nearbyIcon <- icon.glyphicon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "pink")
+  nearby <- TADA_GetUniqueNearbySites(.data)
+  
+  map <- leaflet::leaflet(data = nearby) %>%
+    leaflet::addProviderTiles("Esri.WorldTopoMap", group = "World topo", options = leaflet::providerTileOptions(updateWhenZooming = FALSE, updateWhenIdle = TRUE)) %>%
+    leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure, 
+                               ~TADA.LatitudeMeasure,
+                               icon = nearbyIcon,
+                               label=~as.character(TADA.MonitoringLocationIdentifier))
+  
+  return(map)
+}
+
+
 #' Field Values Pie Chart
 #'
 #' Function creates a ggplot2 pie chart showing the relative proportions of values in a given field in a TADA dataset.
