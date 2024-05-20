@@ -2,7 +2,12 @@
   title: "R Notebook"
 output: html_notebook
 ---
-  
+
+library(arsenal)
+library(httr)
+library(tidyverse)
+library(dplyr)
+library(jsonlite)  
   
   # Access ATTAINS domains ####
 temp <- GET("https://attains.epa.gov/attains-public/api/domains?domainName=ParameterName") %>%
@@ -25,16 +30,18 @@ CST_raw <- import("https://cfpub.epa.gov/wqsits/wqcsearch/criteria-search-tool-d
 # CST_colnames <- list(CST_raw[203, ])
 #########################################################################
 
-# When reviewing the CST file, the rows where the "legend' was changed from
+# When reviewing the CST file, the rows where the "legend', column names, was changed from
 # row 203 to row 206
 # suggested method below to automatically find the row that contains the domain values
 
-#CST_new looks for the row that contains all 23 CST domains and we identify the row this is in
-#rather than manually have to find this
+# CST_new looks for the row that contains all 23 column names. We identify the row this is in
+# rather than manually have to find this
 CST_new<-na.omit(CST_raw)
+
+#identifies the rows that has all 23 CST domains
 CST <- CST_raw[-c(1:(as.numeric(row.names(CST_new))[1])), ]
 
-# rename columns names to the column names in row 190
+# rename columns names to the first instance with all 23 CST domains
 CST_colnames <- list(CST_raw[as.numeric(row.names(CST_new))[1], ])
 
 colnames(CST) <- c(CST_colnames[[1]])
