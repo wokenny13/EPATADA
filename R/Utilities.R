@@ -701,6 +701,14 @@ TADA_CreateComparableID <- function(.data) {
 }
 
 
+TADA_FormatDelimitedString <- function(delimited_string, delimiter = ",") {
+  esc_chars = c("|", "^", "&", ".", "!", "?", "\\", "*", "-", "+", ">", "<")
+  if (delimiter %in% esc_chars) {
+    delimiter <- paste0("\\", delimiter)
+  }
+  return(paste0('["', gsub(delimiter, '","', delimited_string), '"]'))
+}
+
 #' Identify and group nearby monitoring locations (UNDER ACTIVE DEVELOPMENT)
 #'
 #' This function takes a TADA dataset and creates a distance matrix for all
@@ -760,7 +768,8 @@ TADA_FindNearbySites <- function(.data, dist_buffer = 100) {
     sites <- dat$MonitoringLocationIdentifier[dat$Count == 1] # filter to sites within buffer
     sites1 <- sites[!sites %in% fsite] # get site list within buffer that does not include focal site
     if (length(sites1) > 0) { # if this list is greater than 0, combine sites within buffer into data frame
-      df <- data.frame(MonitoringLocationIdentifier = sites, TADA.MonitoringLocationIdentifier = paste0(sites, collapse = "|"))
+      df <- data.frame(MonitoringLocationIdentifier = sites, TADA.MonitoringLocationIdentifier = paste0(sites, collapse = ","))
+      df[c("TADA.MonitoringLocationIdentifier")] <- lapply(df[c("TADA.MonitoringLocationIdentifier")], TADA_FormatDelimitedString)
       groups <- plyr::rbind.fill(groups, df)
     }
   }
@@ -830,7 +839,7 @@ TADA_GetUniqueNearbySites <- function(.data) {
   TADA_CheckColumns(.data, required_cols)
   
   .data <- .data[c("MonitoringLocationIdentifier", "MonitoringLocationName", "MonitoringLocationTypeName", "MonitoringLocationDescriptionText", "TADA.MonitoringLocationIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure")]
-  .data <- unique(dplyr::filter(.data, grepl("\\|", TADA.MonitoringLocationIdentifier)))
+  .data <- unique(dplyr::filter(.data, grepl(",", TADA.MonitoringLocationIdentifier)))
   
   return(.data)
 }
