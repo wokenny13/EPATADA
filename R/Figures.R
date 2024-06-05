@@ -386,7 +386,7 @@ TADA_Histogram <- function(.data, id_cols = c("TADA.ComparableDataIdentifier")) 
 #' TADA_OverviewMap(Data_Nutrients_UT)
 #' TADA_OverviewMap(Data_NCTCShepherdstown_HUC12)
 #' TADA_OverviewMap(Data_6Tribes_5y_Harmonized)
-#' }
+#' }TAD
 #'
 TADA_OverviewMap <- function(.data) {
   suppressMessages(suppressWarnings({
@@ -538,7 +538,7 @@ TADA_OverviewMap <- function(.data) {
 
 #' Create Flagged Sites Map
 TADA_FlaggedSitesMap <- function(.data) {
-  invalid <- TADA_FlagCoordinates(.data, flaggedonly = TRUE)
+  invalid <- TADA_FlagCoordinates(.data, flaggedonly = TRUE)\
   lowres <- TADA_GetUniqueLowRes(.data)
   nearby <- TADA_FindNearbySites(.data)
   nearby <- TADA_GetUniqueNearbySites(nearby)
