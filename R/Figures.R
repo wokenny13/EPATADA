@@ -561,6 +561,64 @@ TADA_OverviewMap <- function(.data) {
   }))
 }
 
+
+#' Create Flagged Sites Map
+TADA_FlaggedSitesMap <- function(.data) {
+  invalid <- TADA_FlagCoordinates(.data, flaggedonly = TRUE)
+  lowres <- invalid[invalid$TADA.InvalidCoordinates.Flag == "Imprecise_lessthan3decimaldigits",]
+  outsideusa <- invalid[invalid$TADA.InvalidCoordinates.Flag %in% c("LAT_OutsideUSA", "LONG_OutsideUSA"),]
+  nearby <- TADA_FindNearbySites(.data)
+  nearby <- TADA_GetUniqueNearbySites(nearby)
+
+  lowresIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "green")
+  outsideIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "purple")
+  nearbyIcon <- leaflet::makeAwesomeIcon(icon = "circle", library = "fa", iconColor = "#ffffff", markerColor = "pink")
+  
+  map <- leaflet::leaflet() %>%
+    leaflet::addProviderTiles("Esri.WorldTopoMap", group = "World topo", options = leaflet::providerTileOptions(updateWhenZooming = FALSE, updateWhenIdle = TRUE)) %>%
+    leaflet.extras::addResetMapButton() # button to reset to initial zoom and lat/long
+  if (nrow(outsideusa) > 0) {
+    map <- map %>% leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
+                               ~TADA.LatitudeMeasure,
+                               icon = outsideIcon,
+                               # label = ~as.character(MonitoringLocationIdentifier),
+                               popup = paste0(
+                                 "Site ID: ", outsideusa$MonitoringLocationIdentifier,
+                                 "<br> Site Name: ", outsideusa$MonitoringLocationName,
+                                 "<br> Latitude: ", outsideuse$TADA.LatitudeMeasure,
+                                 "<br> Longitude: ", outsideuse$TADA.LongitudeMeasure),
+                               data = outsideusa)
+  }
+  if (nrow(lowres) > 0) {
+    map <- map %>% leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
+                                 ~TADA.LatitudeMeasure,
+                                 icon = lowresIcon,
+                                 # label = ~as.character(MonitoringLocationIdentifier),
+                                 popup = paste0(
+                                   "Site ID: ", lowres$MonitoringLocationIdentifier,
+                                   "<br> Site Name: ", lowres$MonitoringLocationName,
+                                   "<br> Latitude: ", lowres$TADA.LatitudeMeasure,
+                                   "<br> Longitude: ", lowres$TADA.LongitudeMeasure),
+                                 data = lowres) 
+  }
+  if (nrow(nearby) > 0) {
+    map <- map %>% leaflet::addAwesomeMarkers(~TADA.LongitudeMeasure,
+                                 ~TADA.LatitudeMeasure,
+                                 icon = nearbyIcon,
+                                 # label = ~as.character(TADA.MonitoringLocationIdentifier),
+                                 popup = paste0(
+                                   "Nearby Group Name: ", nearby$TADA.MonitoringLocationIdentifier,
+                                   "<br> Site ID: ", nearby$MonitoringLocationIdentifier,
+                                   "<br> Site Name: ", nearby$MonitoringLocationName,
+                                   "<br> Latitude: ", nearby$TADA.LatitudeMeasure,
+                                   "<br> Longitude: ", nearby$TADA.LongitudeMeasure),
+                                 data = nearby)
+  }
+  
+  return(map)
+}
+
+
 #' Field Values Pie Chart
 #'
 #' Function creates a ggplot2 pie chart showing the relative proportions of values in a given field in a TADA dataset.
