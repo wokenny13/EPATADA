@@ -15,7 +15,6 @@ vignette: >
   %\VignetteIndexEntry{TADA: WaterSciCon Workshop Demo}
   %\VignetteEngine{knitr::rmarkdown}
 description: A demonstration of data discovery for the confluence of the San Juan and Animas Rivers near Farmington, New Mexico. This example focuses on surface water quality with a focus on total dissolved solids and conduvitivty.
-
 editor_options: 
   chunk_output_type: console
   markdown: 
@@ -347,10 +346,9 @@ ATTAINS_map
 ## Monitoring Location Filter and Review
 
 Now that we've associated geospatial data from **ATTAINS** with the
-**WQP** data, we
-can generate pie charts for each TADA.ComparableDataIdentifier to give
-us some information about how many results are available per each
-monitoring location group.
+**WQP** data, we can generate pie charts for each
+TADA.ComparableDataIdentifier to give us some information about how many
+results are available per each monitoring location group.
 
 ```{r TADA_FieldValuesPie}
 # Select TADA data with ATTAINS data
