@@ -8,10 +8,6 @@
 #' @export
 
 TADA_GetUseCrosswalkRef <- function() {
-  ref <- utils::read.csv(system.file("extdata", "use_mapping_crosswalk.csv", package = "EPATADA"))
-  return(ref)
-}
-
 
 #' Generate CST-ATTAINS Waterbody 'use' and 'use location' Table
 #'
@@ -119,34 +115,7 @@ USES.MAPPING.UPDATED <- regex_left_join(CST.use, ATTAINS.use, by = c('CST_USE_NA
 # one to one mapping of ATTAINS use to CST.
 USES.MAPPING.UPDATED2 <- regex_right_join(CST.use, ATTAINS.use, by = c('CST_USE_NAME'='USE_NAME_UNLISTED','ENTITY_ABBR'))
 
-ref <- utils::write.csv(USES.MAPPING.UPDATED2, system.file("extdata", "use_mapping_crosswalk.csv"))
+utils::write.csv(USES.MAPPING.UPDATED2, "inst/extdata/use_mapping_crosswalk.csv", row.names = FALSE)
+ref <- utils::read.csv(system.file("extdata", "use_mapping_crosswalk.csv", package = "EPATADA"))
 return(ref)
-
-###################################################################################
-# Filter CST.df with matches by CST.domain.upper
-# CST.use.matches <- filter(CST.use.df, CST.use.df$CST.use.upper %in% matches)
-attains.use.upper3 <- as.data.frame(sort(attains.use.upper2$USE))
-colnames(attains.use.upper3) <- c("USE")
-attains.use.upper3 <- left_join(attains.use.upper3, use.matches, keep = TRUE)
-colnames(attains.use.upper3) <- c("ATTAINS.USE","CST.NA.USE.INPUTS.NEEDED")
-
-REFRESH.CST.ATTAINS.USE <- full_join(attains.use.upper3, uses.map1, by = c('ATTAINS.USE' = 'DES_USE_ATTAINS'), keep = TRUE)
-REFRESH.CST.ATTAINS.USE <- unique(select(REFRESH.CST.ATTAINS.USE, 'ATTAINS.USE', 'DES_USE_ATTAINS'))
-colnames(REFRESH.CST.ATTAINS.USE) <- c("NEW.ATTAINS.USE","OLD.ATTAINS.USE")
-write.csv(REFRESH.CST.ATTAINS.USE, "CST_ATTAINS_REFRESH.csv")
-
-# Many to one mapping of CST use to ATTAINS use by 'LIKE' values (joined if contains a substring)
-attains.use.upper2$method1 <- #if(length(attains.use.upper2$USE[i]) == 1,
-  unlist( lapply( lapply( strsplit( attains.use.upper2$USE, " "), 
-                  function(x) paste0( "(?=.*", x, collapse = "", ")" )),
-                  function(x) paste0( "^", x, ".*$") ) )
-attains.use.upper2$method2 <- #if(length(attains.use.upper2$USE[i]) == 1,
-  unlist( lapply( lapply( strsplit( attains.use.upper2$USE, " "), 
-                  function(x) paste0( "(?=.*\\\\b", x, "\\\\b", collapse = "", ")" )),
-                  function(x) paste0( "^", x, ".*$") ) )
-
-USES.MAPPING.UPDATED2 <- regex_left_join(CST.use.upper2, attains.use.upper2, by = c('USE'='method1','ENTITY_ABBR'))
-#write.csv(USES.MAPPING.UPDATED, "USES.MAPPING.UPDATED.csv")
-#CST.ATTAINS.use <- left_join(CST.use.upper2, attains.use.upper3, by = c('USE' = 'CST.NA.USE.INPUTS.NEEDED'), keep = TRUE)
-ref <- utils::write.csv(USES.MAPPING.UPDATED2, system.file("extdata", "use_mapping_crosswalk.csv"))
-return(ref)
+}
