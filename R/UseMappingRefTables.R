@@ -57,7 +57,7 @@ library(jsonlite)
 library(rio)
 library(fuzzyjoin)
 
-# Create data frame. Pull in 'Uses' from ATTAINS Domains field. This defines the activities that took place at a waterbody. 
+# Create data frame. Pull in 'uses' from ATTAINS Domains field. This defines the activities that took place at a waterbody. 
 temp2 <- GET("https://attains.epa.gov/attains-public/api/domains?domainName=UseName") %>%
   content(as = "text", encoding = "UTF-8") %>%
   fromJSON(flatten = TRUE)
@@ -68,67 +68,61 @@ temp3 <- GET("https://attains.epa.gov/attains-public/api/domains?domainName=OrgS
   content(as = "text", encoding = "UTF-8") %>%
   fromJSON(flatten = TRUE)
 
-ATTAINS.use <- temp2 %>%
-  left_join(., temp3, by = "context") %>%
-  select(.,"name.x", "name.y") %>%
-  mutate(name.x, toupper(name.x))
-  
-temp2$name.x <- toupper(temp2$name.x)
-
+# Contains location descriptions of assessment units that can be found within some
+# use name labels in the CST
 au_id <- GET("https://attains.epa.gov/attains-public/api/assessmentUnits?stateCode=FL") %>%
   content(as = "text", encoding = "UTF-8") %>%
   fromJSON(flatten = TRUE)
 au_id2 <- au_id[["items"]][["assessmentUnits"]][[1]]
 
-# Removes duplicate rows in the data frame
-attains.use.upper2 <- unique(temp2)
-colnames(attains.use.upper2) <- c('USE','ENTITY_ABBR')
+# Creates clean data frame of allowable ATTAINS use for each Entity
+ATTAINS.use <- temp2 %>%
+  dplyr::select(., "name", "context") %>%
+  dplyr::left_join(., temp3, by = "context") %>%
+  dplyr::mutate(name.x, toupper(name.x)) %>%
+  dplyr::select(., "name.y", "toupper(name.x)" ) %>%
+  stats::setNames(., c("ENTITY_ABBR", "ATTAINS_USE_NAME")) %>%
+  dplyr::distinct() %>%
+  cbind(., unlist(lapply(lapply(strsplit(.$ATTAINS_USE_NAME, " "), 
+    function(x) paste0( "(?=.*", x, collapse = "", ")" )),
+    function(x) paste0( "^", x, ".*$") ) ) ) %>%
+  stats::setNames(., c("ENTITY_ABBR", "ATTAINS_USE_NAME", "USE_NAME_UNLISTED"))
 
-
-# Extract name parameter from the Use domains. Can additional context be used for 
-# further classification of water use?
-attains.entity.use <- temp2$name
-attains.use <- temp2$name
-# Capitalize characters and converts to a data frame
-attains.use.upper <- toupper(attains.use)
-attains.use.upper <- as.data.frame(attains.use.upper)
-# Removes duplicate rows in the data frame
-attains.use.upper2 <- unique(attains.use.upper)
-# sort(unique(attains.use.upper))
-# Rename the column to 'USE'
-colnames(attains.use.upper2) <- c('USE')
-
-
-library(rio)
 # Pulls in the 'Uses' from the CST domain. Will need to determine if
 # additional methods can be used for further matching of ATTAINS AU definitions to CST
 CST_raw <- import("https://cfpub.epa.gov/wqsits/wqcsearch/criteria-search-tool-data.xlsx")
 
 # CST_new looks for the row that contains all 23 column names. We identify the row this is in
 # rather than manually have to find this
-CST_col <-na.omit(CST_raw)
+CST_col <- na.omit(CST_raw)
 
 # identifies the rows that has all 23 CST column name domains
 CST <- CST_raw[-c(1:(as.numeric(row.names(CST_col))[1])), ]
 
 # rename columns names to the first instance with all 23 CST domains
-CST_colnames <- list(CST_raw[as.numeric(row.names(CST_new))[1], ])
+CST_colnames <- list(CST_raw[as.numeric(row.names(CST))[1] - 1, ])
 colnames(CST) <- c(CST_colnames[[1]])
-CST_colnames <- list(CST_raw[as.numeric(row.names(CST_new))[1], ])
 
-CST.use <- select(CST, 'USE_CLASS_NAME_LOCATION_ETC', 'ENTITY_ABBR')
-CST.use <- as.data.frame(CST.use)
-CST.use.upper <- toupper(CST$USE_CLASS_NAME_LOCATION_ETC)
-CST.use.upper <- cbind(CST.use, as.data.frame(CST.use.upper))
-CST.use.upper2 <- unique(CST.use.upper[,2:3])
-colnames(CST.use.upper2) <- c('ENTITY_ABBR','USE')
-# head(sort(unique(CST.use.upper)),100)
-
-# CST.use.df <- data.frame(CST.use.upper, CST.use)
+CST.use <- CST %>%
+  dplyr::select(., 'USE_CLASS_NAME_LOCATION_ETC', 'ENTITY_ABBR') %>%
+  dplyr::mutate(USE_CLASS_NAME_LOCATION_ETC, toupper(USE_CLASS_NAME_LOCATION_ETC)) %>%
+  dplyr::select(., "ENTITY_ABBR", "toupper(USE_CLASS_NAME_LOCATION_ETC)" ) %>%
+  stats::setNames(., c("ENTITY_ABBR", "CST_USE_NAME")) %>%
+  dplyr::distinct()
 
 # Finds exact matches for USE type from the CST table and ATTAINS table
-use.matches <- intersect(CST.use.upper2, attains.use.upper2)
+use.matches <- intersect(CST.use$CST_USE_NAME, ATTAINS.use$ATTAINS_USE_NAME)
 
+# A many to one mapping of CST use to ATTAINS use.
+USES.MAPPING.UPDATED <- regex_left_join(CST.use, ATTAINS.use, by = c('CST_USE_NAME'='USE_NAME_UNLISTED','ENTITY_ABBR'))
+
+# one to one mapping of ATTAINS use to CST.
+USES.MAPPING.UPDATED2 <- regex_right_join(CST.use, ATTAINS.use, by = c('CST_USE_NAME'='USE_NAME_UNLISTED','ENTITY_ABBR'))
+
+ref <- utils::write.csv(USES.MAPPING.UPDATED2, system.file("extdata", "use_mapping_crosswalk.csv"))
+return(ref)
+
+###################################################################################
 # Filter CST.df with matches by CST.domain.upper
 # CST.use.matches <- filter(CST.use.df, CST.use.df$CST.use.upper %in% matches)
 attains.use.upper3 <- as.data.frame(sort(attains.use.upper2$USE))
@@ -141,8 +135,6 @@ REFRESH.CST.ATTAINS.USE <- unique(select(REFRESH.CST.ATTAINS.USE, 'ATTAINS.USE',
 colnames(REFRESH.CST.ATTAINS.USE) <- c("NEW.ATTAINS.USE","OLD.ATTAINS.USE")
 write.csv(REFRESH.CST.ATTAINS.USE, "CST_ATTAINS_REFRESH.csv")
 
-# Suggest doing a many to one mapping of CST use to ATTAINS use.
-USES.MAPPING.UPDATED <- left_join(CST.use.upper2, attains.use.upper2, by = 'USE', keep = TRUE)
 # Many to one mapping of CST use to ATTAINS use by 'LIKE' values (joined if contains a substring)
 attains.use.upper2$method1 <- #if(length(attains.use.upper2$USE[i]) == 1,
   unlist( lapply( lapply( strsplit( attains.use.upper2$USE, " "), 
