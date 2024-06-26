@@ -908,7 +908,7 @@ TADA_TwoCharacteristicScatterplot <- function(.data, id_cols = "TADA.ComparableD
   # create TADA color palette
   tada.pal <- TADA_ColorPalette()
 
-  scatterplot <- plotly::plot_ly(type = "scatter", mode = "markers", name = groups[1]) %>%
+  scatterplot <- plotly::plot_ly(type = "scatter", mode = "markers") %>%
     plotly::layout(
       xaxis = list(
         # title = "Activity Start Date", # not necessary?
