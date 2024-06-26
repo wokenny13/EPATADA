@@ -66,10 +66,10 @@ temp3 <- GET("https://attains.epa.gov/attains-public/api/domains?domainName=OrgS
 
 # Contains location descriptions of assessment units that can be found within some
 # use name labels in the CST
-au_id <- GET("https://attains.epa.gov/attains-public/api/assessmentUnits?stateCode=FL") %>%
-  content(as = "text", encoding = "UTF-8") %>%
-  fromJSON(flatten = TRUE)
-au_id2 <- au_id[["items"]][["assessmentUnits"]][[1]]
+# au_id <- GET("https://attains.epa.gov/attains-public/api/assessmentUnits?stateCode=FL") %>%
+#   content(as = "text", encoding = "UTF-8") %>%
+#   fromJSON(flatten = TRUE)
+#au_id2 <- au_id[["items"]][["assessmentUnits"]][[1]]
 
 # Creates clean data frame of allowable ATTAINS use for each Entity
 ATTAINS.use <- temp2 %>%
@@ -114,8 +114,20 @@ USES.MAPPING.UPDATED <- regex_left_join(CST.use, ATTAINS.use, by = c('CST_USE_NA
 
 # one to one mapping of ATTAINS use to CST.
 USES.MAPPING.UPDATED2 <- regex_right_join(CST.use, ATTAINS.use, by = c('CST_USE_NAME'='USE_NAME_UNLISTED','ENTITY_ABBR'))
+select(USES.MAPPING.UPDATED2, "ENTITY_ABBR.y", "CST_USE_NAME", "ATTAINS_USE_NAME")
 
-utils::write.csv(USES.MAPPING.UPDATED2, "inst/extdata/use_mapping_crosswalk.csv", row.names = FALSE)
-ref <- utils::read.csv(system.file("extdata", "use_mapping_crosswalk.csv", package = "EPATADA"))
-return(ref)
+# Save updated table in cache,
+UseMappingTableCache <- USES.MAPPING.UPDATED2
+
+return(UseMappingTableCache)
+
+#utils::write.csv(USES.MAPPING.UPDATED2, "inst/extdata/use_mapping_crosswalk.csv", row.names = FALSE)
+#ref <- utils::read.csv(system.file("extdata", "use_mapping_crosswalk.csv", package = "EPATADA"))
+#return(ref)
+}
+
+# Update 'use_mapping_crosswalk.csv' Reference Table internal file (for internal use only)
+
+TADA_UpdateUseMappingRef <- function() {
+ utils::write.csv(TADA_GetUseCrosswalkRef(),"inst/extdata/use_mapping_crosswalk.csv", row.names = FALSE)
 }
