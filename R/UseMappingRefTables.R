@@ -131,3 +131,19 @@ return(UseMappingTableCache)
 TADA_UpdateUseMappingRef <- function() {
  utils::write.csv(TADA_GetUseCrosswalkRef(),"inst/extdata/use_mapping_crosswalk.csv", row.names = FALSE)
 }
+
+################################
+parameters <- read.csv("extdata", "PriorityParameters.csv")
+parameters$Characteristic <- tolower(parameters$Characteristic)
+parameters2 <- right_join(CST, parameters, by = c("POLLUTANT_NAME" = "Characteristic"), keep = TRUE)
+parameters2$USE_CLASS_NAME_LOCATION_ETC <- toupper(parameters2$USE_CLASS_NAME_LOCATION_ETC)
+
+paramUse <- left_join(parameters2, USES.MAPPING.UPDATED2, by = c('USE_CLASS_NAME_LOCATION_ETC' = 'CST_USE_NAME','ENTITY_ABBR' = 'ENTITY_ABBR.y'))
+paramUse2 <- select(paramUse, 'POLLUTANT_NAME', 'ENTITY_ABBR', 'CRITERION_VALUE', 'UNIT_NAME', 'CRITERIATYPEAQUAHUMHLTH', 'CRITERIATYPEFRESHSALTWATER',
+                    'CRITERIATYPE_ACUTECHRONIC', 'USE_CLASS_NAME_LOCATION_ETC', 'ATTAINS_USE_NAME')
+
+parameterUse <- crossing(parameters, unique(paramUse$ENTITY_ABBR))
+parameterUse2 <- left_join(parameterUse, paramUse2, by = c('Characteristic' = 'POLLUTANT_NAME', 'unique(paramUse$ENTITY_ABBR)' = 'ENTITY_ABBR'), keep=TRUE)
+parameterUse2 <- select(parameterUse2, 'Characteristic', 'unique(paramUse$ENTITY_ABBR)', 'CRITERION_VALUE', 'UNIT_NAME', 'CRITERIATYPEAQUAHUMHLTH', 'CRITERIATYPEFRESHSALTWATER',
+                    'CRITERIATYPE_ACUTECHRONIC', 'USE_CLASS_NAME_LOCATION_ETC', 'ATTAINS_USE_NAME')
+utils::write.csv(parameterUse2,"inst/extdata/parameter_use_mapping_crosswalk.csv", row.names = FALSE)
