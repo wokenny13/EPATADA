@@ -133,7 +133,7 @@ TADA_UpdateUseMappingRef <- function() {
 }
 
 ################################
-parameters <- read.csv("extdata", "PriorityParameters.csv")
+parameters <- read_csv("C:/Users/kwong01/TADA/inst/extdata/PriorityParameters.csv")
 parameters$Characteristic <- tolower(parameters$Characteristic)
 parameters2 <- right_join(CST, parameters, by = c("POLLUTANT_NAME" = "Characteristic"), keep = TRUE)
 parameters2$USE_CLASS_NAME_LOCATION_ETC <- toupper(parameters2$USE_CLASS_NAME_LOCATION_ETC)
